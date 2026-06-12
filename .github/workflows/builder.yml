@@ -4,8 +4,6 @@ on:
   workflow_dispatch:
   release:
     types: [created]
-  schedule:
-    - cron: '0 0 * * MON'
 
 permissions:
   contents: read
@@ -16,138 +14,6 @@ env:
   RELEASE_PATH: ${{ github.workspace }}/src/release
 
 jobs:
-  build-ubuntu-24:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-          path: ${{ env.SRC_PATH }}
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install qtbase5-dev qtscript5-dev qttools5-dev-tools libqt5svg5-dev qtchooser qt5-qmake build-essential -y
-
-      - name: Build
-        working-directory: ${{ env.SRC_PATH }}
-        run: |
-          bash -x build_dpkg.sh
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: xpeviewer-ubuntu-24
-          path: |
-            ${{ env.RELEASE_PATH }}/*.deb
-          if-no-files-found: error
-
-  build-ubuntu-24-arm:
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-          path: ${{ env.SRC_PATH }}
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install qtbase5-dev qtscript5-dev qttools5-dev-tools libqt5svg5-dev qtchooser qt5-qmake build-essential -y
-
-      - name: Build
-        working-directory: ${{ env.SRC_PATH }}
-        run: |
-          bash -x build_dpkg.sh
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: xpeviewer-ubuntu-24-arm
-          path: |
-            ${{ env.RELEASE_PATH }}/*.deb
-          if-no-files-found: error
-
-  build-ubuntu-22:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-          path: ${{ env.SRC_PATH }}
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install qtbase5-dev qtscript5-dev qttools5-dev-tools libqt5svg5-dev qtchooser qt5-qmake build-essential -y
-
-      - name: Build
-        working-directory: ${{ env.SRC_PATH }}
-        run: |
-          bash -x build_dpkg.sh
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: xpeviewer-ubuntu-22
-          path: |
-            ${{ env.RELEASE_PATH }}/*.deb
-          if-no-files-found: error
-
-  build-windows-32:
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-          path: ${{ env.SRC_PATH }}
-
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x86
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '5.15.2'
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win32_msvc2019'
-          dir: ${{ github.workspace }}
-          modules: qtscript
-
-      - name: Build
-        shell: cmd
-        working-directory: ${{ env.SRC_PATH }}
-        run: |
-          set VSVARS_PATH="C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
-          set QMAKE_PATH="${{ github.workspace }}\Qt\5.15.2\msvc2019\bin\qmake.exe"
-          set SEVENZIP_PATH="C:\Program Files\7-Zip\7z.exe"
-          set INNOSETUP_PATH="C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-
-          set X_BUILD_NAME=xpeviewer
-          set X_BUILD_PREFIX=win32
-          set X_SOURCE_PATH=${{ env.SRC_PATH_WIN }}
-          for /f "delims=" %%x in ('type "%X_SOURCE_PATH%\release_version.txt"') do set X_RELEASE_VERSION=%%x
-
-          echo on
-          call "%X_SOURCE_PATH%\build_win_generic.cmd"
-
-          dir "%X_SOURCE_PATH%\release\*.zip" >nul 2>&1
-          if %ERRORLEVEL% neq 0 (
-            echo "ZIP file does not exist"
-            exit /b 1
-          )
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: xpeviewer-windows-x86
-          path: |
-            ${{ env.RELEASE_PATH }}/*.zip
-          if-no-files-found: error
-
   build-windows-64:
     runs-on: windows-2022
     steps:
@@ -200,15 +66,12 @@ jobs:
           name: xpeviewer-windows-x64
           path: |
             ${{ env.RELEASE_PATH }}/*.zip
+            ${{ env.RELEASE_PATH }}/*.exe
           if-no-files-found: error
 
   publish-release:
     runs-on: ubuntu-latest
     needs:
-      - build-ubuntu-24
-      - build-ubuntu-24-arm
-      - build-ubuntu-22
-      - build-windows-32
       - build-windows-64
     permissions:
       contents: write

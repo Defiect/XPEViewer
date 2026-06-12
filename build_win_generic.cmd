@@ -43,5 +43,11 @@ call %X_SOURCE_PATH%\build_tools\windows.cmd deploy_redist
 call %X_SOURCE_PATH%\build_tools\windows.cmd deploy_openssl
 
 call %X_SOURCE_PATH%\build_tools\windows.cmd make_release
+
+rem Build the Inno Setup installer (make_release skips it due to a broken path check in build_tools)
+IF [%INNOSETUP_PATH%] == [] goto exit
+if not exist "%X_SOURCE_PATH%\install.iss" goto exit
+%INNOSETUP_PATH% "%X_SOURCE_PATH%\install.iss"
+if exist "%X_SOURCE_PATH%\release\install.exe" ren "%X_SOURCE_PATH%\release\install.exe" "%X_BUILD_NAME%_%X_BUILD_PREFIX%_install_%X_RELEASE_VERSION%.exe"
 :exit
 call %X_SOURCE_PATH%\build_tools\windows.cmd make_clear
